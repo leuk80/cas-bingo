@@ -25,79 +25,140 @@ const bingoWinner = document.getElementById('bingo-winner')!;
 const btnCloseOverlay = document.getElementById('btn-close-overlay')!;
 
 // State
-let ws: WebSocket | null = null;
+let playerId = localStorage.getItem('bingo-player-id');
+if (!playerId) {
+  playerId = crypto.randomUUID();
+  localStorage.setItem('bingo-player-id', playerId);
+}
+
+let roomCode: string | null = null;
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+let lastVersion = -1;
 let isHost = false;
 let myCard: string[][] = [];
 let myMarked: boolean[][] = [];
 let calledWords: string[] = [];
+let currentView: 'start' | 'lobby' | 'game' = 'start';
+let bingoShown = false;
 
 // View switching
-function showView(view: HTMLElement) {
-  viewStart.classList.remove('active');
-  viewLobby.classList.remove('active');
-  viewGame.classList.remove('active');
-  view.classList.add('active');
+function showView(view: 'start' | 'lobby' | 'game') {
+  currentView = view;
+  viewStart.classList.toggle('active', view === 'start');
+  viewLobby.classList.toggle('active', view === 'lobby');
+  viewGame.classList.toggle('active', view === 'game');
 }
 
-// WebSocket connection
-function connect(roomCode: string, playerName: string) {
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/api/ws?room=${roomCode}`;
-
-  ws = new WebSocket(wsUrl);
-
-  ws.addEventListener('open', () => {
-    ws!.send(JSON.stringify({ type: 'join', name: playerName }));
+// API helpers
+async function apiPost(path: string, body: Record<string, unknown>) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, playerId }),
   });
-
-  ws.addEventListener('message', (event) => {
-    const msg = JSON.parse(event.data);
-    handleServerMessage(msg);
-  });
-
-  ws.addEventListener('close', () => {
-    // Attempt reconnect after a short delay
-    setTimeout(() => {
-      if (ws?.readyState === WebSocket.CLOSED) {
-        showView(viewStart);
-      }
-    }, 2000);
-  });
+  return res.json();
 }
 
-function handleServerMessage(msg: any) {
-  switch (msg.type) {
-    case 'room-info':
-      handleRoomInfo(msg);
-      break;
-    case 'game-started':
-      handleGameStarted(msg);
-      break;
-    case 'word-called':
-      handleWordCalled(msg);
-      break;
-    case 'marked':
-      handleMarked(msg);
-      break;
-    case 'bingo':
-      handleBingo(msg);
-      break;
-    case 'error':
-      showError(msg.message);
-      break;
+async function sendAction(type: string, data: Record<string, unknown> = {}) {
+  if (!roomCode) return;
+  const result = await apiPost(`/api/room/${roomCode}/action`, { type, ...data });
+  if (result.error) {
+    showError(result.error);
+    return null;
+  }
+  // Immediate state update from action response
+  if (result.state) {
+    applyState(result.state);
+  }
+  return result;
+}
+
+// Polling
+function startPolling(code: string) {
+  roomCode = code;
+  stopPolling();
+  poll(); // Immediate first poll
+  pollInterval = setInterval(poll, 2000);
+}
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
   }
 }
 
-function handleRoomInfo(msg: any) {
-  showView(viewLobby);
-  roomCodeDisplay.textContent = msg.roomCode;
-  isHost = msg.isHost;
+async function poll() {
+  if (!roomCode || !playerId) return;
+  try {
+    const res = await fetch(`/api/room/${roomCode}/state?playerId=${playerId}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        stopPolling();
+        showView('start');
+        showError('Raum nicht gefunden oder abgelaufen.');
+      }
+      return;
+    }
+    const state = await res.json();
+    if (state.version !== lastVersion) {
+      applyState(state);
+    }
+  } catch {
+    // Network error, keep polling
+  }
+}
 
+function applyState(state: any) {
+  lastVersion = state.version;
+  isHost = state.isHost;
+
+  if (state.winner && !bingoShown) {
+    bingoShown = true;
+    bingoWinner.textContent = `${state.winner} hat gewonnen!`;
+    bingoOverlay.classList.add('active');
+    createConfetti();
+  }
+
+  if (state.gameStarted && state.card && state.card.length > 0) {
+    myCard = state.card;
+    myMarked = state.marked;
+    calledWords = state.calledWords;
+
+    if (currentView !== 'game') {
+      showView('game');
+      bingoShown = false;
+    }
+
+    currentWordDisplay.textContent = state.currentWord || '—';
+    btnCall.style.display = isHost ? 'block' : 'none';
+    btnReset.style.display = isHost ? 'block' : 'none';
+
+    renderCard();
+    renderCalledWords();
+  } else {
+    // Lobby
+    if (currentView !== 'lobby' && currentView !== 'start') {
+      showView('lobby');
+    }
+    if (currentView === 'lobby' || currentView === 'start') {
+      showView('lobby');
+      roomCodeDisplay.textContent = state.roomCode;
+      renderPlayerList(state.players, state.isHost);
+      btnStart.style.display = isHost ? 'block' : 'none';
+      lobbyWait.style.display = isHost ? 'none' : 'block';
+      bingoShown = false;
+    }
+  }
+}
+
+function renderPlayerList(players: { id: string; name: string }[], amHost: boolean) {
   playerList.innerHTML = '';
-  for (const player of msg.players) {
+  for (const player of players) {
     const li = document.createElement('li');
     li.textContent = player.name;
-    if (msg.players.indexOf(player) === 0) {
+    if (player.id === Object.keys(players)[0] || players.indexOf(player) === 0) {
+      // First player is the host
       const badge = document.createElement('span');
       badge.className = 'host-badge';
       badge.textContent = 'Host';
@@ -105,44 +166,9 @@ function handleRoomInfo(msg: any) {
     }
     playerList.appendChild(li);
   }
-
-  btnStart.style.display = isHost ? 'block' : 'none';
-  lobbyWait.style.display = isHost ? 'none' : 'block';
-}
-
-function handleGameStarted(msg: any) {
-  myCard = msg.card;
-  myMarked = msg.marked;
-  calledWords = [];
-  showView(viewGame);
-  renderCard();
-
-  btnCall.style.display = isHost ? 'block' : 'none';
-  btnReset.style.display = isHost ? 'block' : 'none';
-  currentWordDisplay.textContent = '—';
-  calledWordsList.innerHTML = '';
-}
-
-function handleWordCalled(msg: any) {
-  calledWords = msg.calledWords;
-  currentWordDisplay.textContent = msg.word;
-  renderCalledWords();
-  renderCard(); // Update callable highlights
-}
-
-function handleMarked(msg: any) {
-  myMarked = msg.marked;
-  renderCard();
-}
-
-function handleBingo(msg: any) {
-  bingoWinner.textContent = `${msg.winner} hat gewonnen!`;
-  bingoOverlay.classList.add('active');
-  createConfetti();
 }
 
 function showError(message: string) {
-  // Simple inline notification
   const existing = document.querySelector('.error-toast');
   if (existing) existing.remove();
 
@@ -176,12 +202,12 @@ function renderCard() {
       if (isCallable) cell.classList.add('callable');
 
       if (!isFree && !isMarked) {
-        cell.addEventListener('click', () => {
+        cell.addEventListener('click', async () => {
           if (!calledWords.includes(myCard[r][c])) {
             showError('Dieses Wort wurde noch nicht aufgerufen.');
             return;
           }
-          ws?.send(JSON.stringify({ type: 'mark', row: r, col: c }));
+          await sendAction('mark', { row: r, col: c });
         });
       }
 
@@ -222,14 +248,13 @@ function createConfetti() {
     setTimeout(() => confetti.remove(), 5000);
   }
 
-  // Add confetti animation if not present
   if (!document.getElementById('confetti-style')) {
     const style = document.createElement('style');
     style.id = 'confetti-style';
     style.textContent = `
       @keyframes confetti-fall {
         0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(100vh) rotate(${360 + Math.random() * 360}deg); opacity: 0; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
@@ -245,15 +270,23 @@ btnCreate.addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch('/api/create');
+    const res = await fetch('/api/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, playerId }),
+    });
     const data = await res.json();
-    connect(data.roomCode, name);
+    if (data.error) {
+      showError(data.error);
+      return;
+    }
+    startPolling(data.roomCode);
   } catch {
     showError('Fehler beim Erstellen des Spiels.');
   }
 });
 
-btnJoin.addEventListener('click', () => {
+btnJoin.addEventListener('click', async () => {
   const code = joinCodeInput.value.trim().toUpperCase();
   const name = joinNameInput.value.trim();
 
@@ -266,34 +299,35 @@ btnJoin.addEventListener('click', () => {
     return;
   }
 
-  connect(code, name);
+  // Join via action endpoint
+  roomCode = code;
+  const result = await apiPost(`/api/room/${code}/action`, { type: 'join', name });
+  if (result.error) {
+    showError(result.error);
+    roomCode = null;
+    return;
+  }
+  startPolling(code);
 });
 
-btnStart.addEventListener('click', () => {
-  ws?.send(JSON.stringify({ type: 'start' }));
-});
-
-btnCall.addEventListener('click', () => {
-  ws?.send(JSON.stringify({ type: 'call-word' }));
-});
-
+btnStart.addEventListener('click', () => sendAction('start'));
+btnCall.addEventListener('click', () => sendAction('call-word'));
 btnReset.addEventListener('click', () => {
-  ws?.send(JSON.stringify({ type: 'reset' }));
+  bingoShown = false;
+  sendAction('reset');
 });
 
 btnCloseOverlay.addEventListener('click', () => {
   bingoOverlay.classList.remove('active');
 });
 
-// Allow Enter key for inputs
+// Enter key support
 joinCodeInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') btnJoin.click();
 });
-
 joinNameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') btnJoin.click();
 });
-
 hostNameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') btnCreate.click();
 });

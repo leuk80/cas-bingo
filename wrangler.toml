@@ -2,14 +2,9 @@ name = "cas-bingo"
 main = "src/index.ts"
 compatibility_date = "2024-12-30"
 
-[durable_objects]
-bindings = [
-  { name = "BINGO_ROOM", class_name = "BingoRoom" }
-]
-
-[[migrations]]
-tag = "v1"
-new_classes = ["BingoRoom"]
+[[kv_namespaces]]
+binding = "BINGO_KV"
+id = "placeholder"
 
 [assets]
 directory = "src/public"
