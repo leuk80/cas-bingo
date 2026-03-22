@@ -12,12 +12,8 @@ const btnJoin = document.getElementById('btn-join')!;
 const roomCodeDisplay = document.getElementById('room-code')!;
 const playerList = document.getElementById('player-list')!;
 const btnStart = document.getElementById('btn-start')!;
-const lobbyWait = document.getElementById('lobby-wait')!;
 
-const currentWordDisplay = document.getElementById('current-word')!;
-const btnCall = document.getElementById('btn-call')!;
 const bingoCardEl = document.getElementById('bingo-card')!;
-const calledWordsList = document.getElementById('called-words-list')!;
 const btnReset = document.getElementById('btn-reset')!;
 
 const bingoOverlay = document.getElementById('bingo-overlay')!;
@@ -34,10 +30,8 @@ if (!playerId) {
 let roomCode: string | null = null;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let lastVersion = -1;
-let isHost = false;
 let myCard: string[][] = [];
 let myMarked: boolean[][] = [];
-let calledWords: string[] = [];
 let currentView: 'start' | 'lobby' | 'game' = 'start';
 let bingoShown = false;
 
@@ -66,7 +60,6 @@ async function sendAction(type: string, data: Record<string, unknown> = {}) {
     showError(result.error);
     return null;
   }
-  // Immediate state update from action response
   if (result.state) {
     applyState(result.state);
   }
@@ -77,7 +70,7 @@ async function sendAction(type: string, data: Record<string, unknown> = {}) {
 function startPolling(code: string) {
   roomCode = code;
   stopPolling();
-  poll(); // Immediate first poll
+  poll();
   pollInterval = setInterval(poll, 2000);
 }
 
@@ -111,7 +104,6 @@ async function poll() {
 
 function applyState(state: any) {
   lastVersion = state.version;
-  isHost = state.isHost;
 
   if (state.winner && !bingoShown) {
     bingoShown = true;
@@ -123,19 +115,13 @@ function applyState(state: any) {
   if (state.gameStarted && state.card && state.card.length > 0) {
     myCard = state.card;
     myMarked = state.marked;
-    calledWords = state.calledWords;
 
     if (currentView !== 'game') {
       showView('game');
       bingoShown = false;
     }
 
-    currentWordDisplay.textContent = state.currentWord || '—';
-    btnCall.style.display = isHost ? 'block' : 'none';
-    btnReset.style.display = isHost ? 'block' : 'none';
-
     renderCard();
-    renderCalledWords();
   } else {
     // Lobby
     if (currentView !== 'lobby' && currentView !== 'start') {
@@ -144,26 +130,17 @@ function applyState(state: any) {
     if (currentView === 'lobby' || currentView === 'start') {
       showView('lobby');
       roomCodeDisplay.textContent = state.roomCode;
-      renderPlayerList(state.players, state.isHost);
-      btnStart.style.display = isHost ? 'block' : 'none';
-      lobbyWait.style.display = isHost ? 'none' : 'block';
+      renderPlayerList(state.players);
       bingoShown = false;
     }
   }
 }
 
-function renderPlayerList(players: { id: string; name: string }[], amHost: boolean) {
+function renderPlayerList(players: { id: string; name: string }[]) {
   playerList.innerHTML = '';
   for (const player of players) {
     const li = document.createElement('li');
     li.textContent = player.name;
-    if (player.id === Object.keys(players)[0] || players.indexOf(player) === 0) {
-      // First player is the host
-      const badge = document.createElement('span');
-      badge.className = 'host-badge';
-      badge.textContent = 'Host';
-      li.appendChild(badge);
-    }
     playerList.appendChild(li);
   }
 }
@@ -195,35 +172,18 @@ function renderCard() {
 
       const isFree = r === 2 && c === 2;
       const isMarked = myMarked[r][c];
-      const isCallable = !isMarked && !isFree && calledWords.includes(myCard[r][c]);
 
       if (isFree) cell.classList.add('free');
       if (isMarked) cell.classList.add('marked');
-      if (isCallable) cell.classList.add('callable');
 
       if (!isFree && !isMarked) {
         cell.addEventListener('click', async () => {
-          if (!calledWords.includes(myCard[r][c])) {
-            showError('Dieses Wort wurde noch nicht aufgerufen.');
-            return;
-          }
           await sendAction('mark', { row: r, col: c });
         });
       }
 
       bingoCardEl.appendChild(cell);
     }
-  }
-}
-
-// Render called words list
-function renderCalledWords() {
-  calledWordsList.innerHTML = '';
-  for (const word of calledWords) {
-    const chip = document.createElement('span');
-    chip.className = 'called-word-chip';
-    chip.textContent = word;
-    calledWordsList.appendChild(chip);
   }
 }
 
@@ -299,7 +259,6 @@ btnJoin.addEventListener('click', async () => {
     return;
   }
 
-  // Join via action endpoint
   roomCode = code;
   const result = await apiPost(`/api/room/${code}/action`, { type: 'join', name });
   if (result.error) {
@@ -311,7 +270,6 @@ btnJoin.addEventListener('click', async () => {
 });
 
 btnStart.addEventListener('click', () => sendAction('start'));
-btnCall.addEventListener('click', () => sendAction('call-word'));
 btnReset.addEventListener('click', () => {
   bingoShown = false;
   sendAction('reset');

@@ -9,9 +9,7 @@ export interface Player {
 export interface RoomState {
   version: number;
   roomCode: string;
-  hostId: string;
   players: Record<string, Player>;
-  calledWords: string[];
   gameStarted: boolean;
   winner: string | null;
 }
@@ -30,15 +28,13 @@ export function generateRoomCode(): string {
   return code;
 }
 
-export function createRoom(roomCode: string, hostId: string, hostName: string): RoomState {
+export function createRoom(roomCode: string, creatorId: string, creatorName: string): RoomState {
   return {
     version: 1,
     roomCode,
-    hostId,
     players: {
-      [hostId]: { name: hostName, card: [], marked: [] },
+      [creatorId]: { name: creatorName, card: [], marked: [] },
     },
-    calledWords: [],
     gameStarted: false,
     winner: null,
   };
@@ -87,13 +83,11 @@ export function handleAction(
     case 'join':
       return handleJoin(state, action.playerId, action.name as string);
     case 'start':
-      return handleStart(state, action.playerId);
-    case 'call-word':
-      return handleCallWord(state, action.playerId);
+      return handleStart(state);
     case 'mark':
       return handleMark(state, action.playerId, action.row as number, action.col as number);
     case 'reset':
-      return handleReset(state, action.playerId);
+      return handleReset(state);
     default:
       return { state, response: { error: 'Unknown action' } };
   }
@@ -115,16 +109,12 @@ function handleJoin(state: RoomState, playerId: string, name: string): ActionRes
   return { state, response: { ok: true } };
 }
 
-function handleStart(state: RoomState, playerId: string): ActionResult {
-  if (playerId !== state.hostId) {
-    return { state, response: { error: 'Nur der Host kann das Spiel starten.' } };
-  }
+function handleStart(state: RoomState): ActionResult {
   if (Object.keys(state.players).length < 1) {
     return { state, response: { error: 'Warte auf Spieler.' } };
   }
 
   state.gameStarted = true;
-  state.calledWords = [];
   state.winner = null;
 
   for (const pid of Object.keys(state.players)) {
@@ -137,26 +127,6 @@ function handleStart(state: RoomState, playerId: string): ActionResult {
 
   state.version++;
   return { state, response: { ok: true } };
-}
-
-function handleCallWord(state: RoomState, playerId: string): ActionResult {
-  if (playerId !== state.hostId) {
-    return { state, response: { error: 'Nur der Host kann Wörter aufrufen.' } };
-  }
-  if (!state.gameStarted || state.winner) {
-    return { state, response: { error: 'Spiel nicht aktiv.' } };
-  }
-
-  const remaining = BINGO_WORDS.filter(w => !state.calledWords.includes(w));
-  if (remaining.length === 0) {
-    return { state, response: { error: 'Alle Wörter wurden aufgerufen!' } };
-  }
-
-  const word = remaining[Math.floor(Math.random() * remaining.length)];
-  state.calledWords.push(word);
-  state.version++;
-
-  return { state, response: { ok: true, word } };
 }
 
 function handleMark(state: RoomState, playerId: string, row: number, col: number): ActionResult {
@@ -176,11 +146,6 @@ function handleMark(state: RoomState, playerId: string, row: number, col: number
     return { state, response: { error: 'Freifeld.' } };
   }
 
-  const word = player.card[row][col];
-  if (!state.calledWords.includes(word)) {
-    return { state, response: { error: 'Dieses Wort wurde noch nicht aufgerufen.' } };
-  }
-
   player.marked[row][col] = true;
   state.version++;
 
@@ -191,13 +156,8 @@ function handleMark(state: RoomState, playerId: string, row: number, col: number
   return { state, response: { ok: true, winner: state.winner } };
 }
 
-function handleReset(state: RoomState, playerId: string): ActionResult {
-  if (playerId !== state.hostId) {
-    return { state, response: { error: 'Nur der Host kann das Spiel zurücksetzen.' } };
-  }
-
+function handleReset(state: RoomState): ActionResult {
   state.gameStarted = false;
-  state.calledWords = [];
   state.winner = null;
   for (const pid of Object.keys(state.players)) {
     state.players[pid].card = [];
@@ -218,13 +178,10 @@ export function getPlayerView(state: RoomState, playerId: string) {
   return {
     version: state.version,
     roomCode: state.roomCode,
-    isHost: playerId === state.hostId,
     players: playerList,
     gameStarted: state.gameStarted,
     card: player?.card || [],
     marked: player?.marked || [],
-    calledWords: state.calledWords,
-    currentWord: state.calledWords.length > 0 ? state.calledWords[state.calledWords.length - 1] : null,
     winner: state.winner,
   };
 }
