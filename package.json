@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "build": "esbuild src/client/app.ts --bundle --outfile=src/public/app.js --format=esm --target=es2020 --minify",
-    "dev": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "dev": "npm run build && wrangler pages dev src/public --kv BINGO_KV",
+    "deploy": "npm run build && wrangler pages deploy src/public"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241230.0",
