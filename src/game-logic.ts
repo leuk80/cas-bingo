@@ -95,14 +95,14 @@ export function handleAction(
 
 function handleJoin(state: RoomState, playerId: string, name: string): ActionResult {
   if (state.winner) {
-    return { state, response: { error: 'Das Spiel ist bereits beendet.' } };
+    return { state, response: { error: 'The game has already ended.' } };
   }
   if (state.gameStarted && !state.players[playerId]) {
-    return { state, response: { error: 'Das Spiel läuft bereits.' } };
+    return { state, response: { error: 'The game is already in progress.' } };
   }
 
   if (!state.players[playerId]) {
-    state.players[playerId] = { name: name || 'Spieler', card: [], marked: [] };
+    state.players[playerId] = { name: name || 'Player', card: [], marked: [] };
     state.version++;
   }
 
@@ -111,7 +111,7 @@ function handleJoin(state: RoomState, playerId: string, name: string): ActionRes
 
 function handleStart(state: RoomState): ActionResult {
   if (Object.keys(state.players).length < 1) {
-    return { state, response: { error: 'Warte auf Spieler.' } };
+    return { state, response: { error: 'Waiting for players.' } };
   }
 
   state.gameStarted = true;
@@ -131,19 +131,19 @@ function handleStart(state: RoomState): ActionResult {
 
 function handleMark(state: RoomState, playerId: string, row: number, col: number): ActionResult {
   if (!state.gameStarted || state.winner) {
-    return { state, response: { error: 'Spiel nicht aktiv.' } };
+    return { state, response: { error: 'Game not active.' } };
   }
 
   const player = state.players[playerId];
   if (!player || !player.card.length) {
-    return { state, response: { error: 'Spieler nicht gefunden.' } };
+    return { state, response: { error: 'Player not found.' } };
   }
 
   if (row < 0 || row > 4 || col < 0 || col > 4) {
-    return { state, response: { error: 'Ungültiges Feld.' } };
+    return { state, response: { error: 'Invalid cell.' } };
   }
   if (row === 2 && col === 2) {
-    return { state, response: { error: 'Freifeld.' } };
+    return { state, response: { error: 'Free space.' } };
   }
 
   player.marked[row][col] = true;

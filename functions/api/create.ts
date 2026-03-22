@@ -13,7 +13,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const { name, playerId } = body;
 
     if (!name || !playerId) {
-      return Response.json({ error: 'Name und playerId erforderlich.' }, { status: 400 });
+      return Response.json({ error: 'Name and playerId required.' }, { status: 400 });
     }
 
     const roomCode = generateRoomCode();
@@ -22,6 +22,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     return Response.json({ roomCode });
   } catch (e: any) {
-    return Response.json({ error: 'Ungültige Anfrage.', detail: e?.message || String(e) }, { status: 400 });
+    return Response.json({ error: 'Invalid request.', detail: e?.message || String(e) }, { status: 400 });
   }
 };

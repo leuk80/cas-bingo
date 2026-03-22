@@ -13,12 +13,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const action = await context.request.json() as { type: string; playerId: string; [key: string]: unknown };
 
     if (!action.type || !action.playerId) {
-      return Response.json({ error: 'type und playerId erforderlich.' }, { status: 400 });
+      return Response.json({ error: 'type and playerId required.' }, { status: 400 });
     }
 
     const raw = await context.env.BINGO_KV.get(`room:${roomCode}`);
     if (!raw) {
-      return Response.json({ error: 'Raum nicht gefunden.' }, { status: 404 });
+      return Response.json({ error: 'Room not found.' }, { status: 404 });
     }
 
     const state: RoomState = JSON.parse(raw);
@@ -29,6 +29,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const view = getPlayerView(result.state, action.playerId);
     return Response.json({ ...result.response, state: view });
   } catch (e: any) {
-    return Response.json({ error: 'Ungültige Anfrage.', detail: e?.message || String(e) }, { status: 400 });
+    return Response.json({ error: 'Invalid request.', detail: e?.message || String(e) }, { status: 400 });
   }
 };

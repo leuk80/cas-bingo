@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,17 +16,17 @@
     <!-- View: Start -->
     <div id="view-start" class="view active">
       <div class="card start-card">
-        <h2>Neues Spiel</h2>
-        <p>Erstelle ein neues Bingo-Spiel und teile den Code mit deinen Kollegen.</p>
-        <input type="text" id="host-name" placeholder="Dein Name" maxlength="20" autocomplete="off">
-        <button id="btn-create" class="btn-primary">Spiel erstellen</button>
+        <h2>New Game</h2>
+        <p>Create a new bingo game and share the code with your colleagues.</p>
+        <input type="text" id="host-name" placeholder="Your name" maxlength="20" autocomplete="off">
+        <button id="btn-create" class="btn-primary">Create Game</button>
       </div>
       <div class="card start-card">
-        <h2>Spiel beitreten</h2>
-        <p>Gib den Raumcode ein, um einem Spiel beizutreten.</p>
-        <input type="text" id="join-code" placeholder="Raumcode (z.B. ABC123)" maxlength="6" autocomplete="off">
-        <input type="text" id="join-name" placeholder="Dein Name" maxlength="20" autocomplete="off">
-        <button id="btn-join" class="btn-primary">Beitreten</button>
+        <h2>Join Game</h2>
+        <p>Enter the room code to join a game.</p>
+        <input type="text" id="join-code" placeholder="Room code (e.g. ABC123)" maxlength="6" autocomplete="off">
+        <input type="text" id="join-name" placeholder="Your name" maxlength="20" autocomplete="off">
+        <button id="btn-join" class="btn-primary">Join</button>
       </div>
     </div>
 
@@ -34,25 +34,25 @@
     <div id="view-lobby" class="view">
       <div class="card lobby-card">
         <div class="room-code-display">
-          <span class="room-code-label">Raumcode</span>
+          <span class="room-code-label">Room Code</span>
           <span id="room-code" class="room-code-value"></span>
         </div>
-        <h2>Spieler</h2>
+        <h2>Players</h2>
         <ul id="player-list" class="player-list"></ul>
-        <button id="btn-start" class="btn-primary">Spiel starten</button>
-        <p id="lobby-hint" class="hint">Teile den Raumcode mit deinen Kollegen</p>
+        <button id="btn-start" class="btn-primary">Start Game</button>
+        <p id="lobby-hint" class="hint">Share the room code with your colleagues</p>
       </div>
     </div>
 
     <!-- View: Game -->
     <div id="view-game" class="view">
       <div class="game-hint">
-        <p>Klicke auf einen Begriff, wenn er im Meeting genannt wird!</p>
+        <p>Click a phrase when you hear it in the meeting!</p>
       </div>
 
       <div id="bingo-card" class="bingo-card"></div>
 
-      <button id="btn-reset" class="btn-secondary">Neues Spiel</button>
+      <button id="btn-reset" class="btn-secondary">New Game</button>
     </div>
 
     <!-- Bingo Overlay -->

@@ -89,7 +89,7 @@ async function poll() {
       if (res.status === 404) {
         stopPolling();
         showView('start');
-        showError('Raum nicht gefunden oder abgelaufen.');
+        showError('Room not found or expired.');
       }
       return;
     }
@@ -107,7 +107,7 @@ function applyState(state: any) {
 
   if (state.winner && !bingoShown) {
     bingoShown = true;
-    bingoWinner.textContent = `${state.winner} hat gewonnen!`;
+    bingoWinner.textContent = `${state.winner} wins!`;
     bingoOverlay.classList.add('active');
     createConfetti();
   }
@@ -225,7 +225,7 @@ function createConfetti() {
 btnCreate.addEventListener('click', async () => {
   const name = hostNameInput.value.trim();
   if (!name) {
-    showError('Bitte gib deinen Namen ein.');
+    showError('Please enter your name.');
     return;
   }
 
@@ -242,7 +242,7 @@ btnCreate.addEventListener('click', async () => {
     }
     startPolling(data.roomCode);
   } catch (e: any) {
-    showError('Fehler beim Erstellen des Spiels: ' + (e?.message || ''));
+    showError('Error creating game: ' + (e?.message || ''));
   }
 });
 
@@ -251,11 +251,11 @@ btnJoin.addEventListener('click', async () => {
   const name = joinNameInput.value.trim();
 
   if (!code || code.length < 4) {
-    showError('Bitte gib einen gültigen Raumcode ein.');
+    showError('Please enter a valid room code.');
     return;
   }
   if (!name) {
-    showError('Bitte gib deinen Namen ein.');
+    showError('Please enter your name.');
     return;
   }
 

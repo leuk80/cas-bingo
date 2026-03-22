@@ -10,12 +10,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const playerId = url.searchParams.get('playerId');
 
   if (!playerId) {
-    return Response.json({ error: 'playerId erforderlich.' }, { status: 400 });
+    return Response.json({ error: 'playerId required.' }, { status: 400 });
   }
 
   const raw = await context.env.BINGO_KV.get(`room:${roomCode}`);
   if (!raw) {
-    return Response.json({ error: 'Raum nicht gefunden.' }, { status: 404 });
+    return Response.json({ error: 'Room not found.' }, { status: 404 });
   }
 
   const state: RoomState = JSON.parse(raw);
