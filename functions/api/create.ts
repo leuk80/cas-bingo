@@ -20,7 +20,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     await context.env.BINGO_KV.put(`room:${roomCode}`, JSON.stringify(state), { expirationTtl: KV_TTL });
 
     return Response.json({ roomCode });
-  } catch {
-    return Response.json({ error: 'Ungültige Anfrage.' }, { status: 400 });
+  } catch (e: any) {
+    return Response.json({ error: 'Ungültige Anfrage.', detail: e?.message || String(e) }, { status: 400 });
   }
 };

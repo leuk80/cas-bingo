@@ -28,7 +28,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const view = getPlayerView(result.state, action.playerId);
     return Response.json({ ...result.response, state: view });
-  } catch {
-    return Response.json({ error: 'Ungültige Anfrage.' }, { status: 400 });
+  } catch (e: any) {
+    return Response.json({ error: 'Ungültige Anfrage.', detail: e?.message || String(e) }, { status: 400 });
   }
 };

@@ -277,12 +277,12 @@ btnCreate.addEventListener('click', async () => {
     });
     const data = await res.json();
     if (data.error) {
-      showError(data.error);
+      showError(data.detail ? `${data.error} (${data.detail})` : data.error);
       return;
     }
     startPolling(data.roomCode);
-  } catch {
-    showError('Fehler beim Erstellen des Spiels.');
+  } catch (e: any) {
+    showError('Fehler beim Erstellen des Spiels: ' + (e?.message || ''));
   }
 });
 
