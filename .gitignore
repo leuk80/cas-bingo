@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.wrangler/
+src/public/app.js
+src/public/app.js.map

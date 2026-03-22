@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leadership Bingo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Leadership Bingo</h1>
+      <p class="subtitle">The Leadership Toolbox</p>
+    </header>
+
+    <!-- View: Start -->
+    <div id="view-start" class="view active">
+      <div class="card start-card">
+        <h2>Neues Spiel</h2>
+        <p>Erstelle ein neues Bingo-Spiel und lade Spieler ein.</p>
+        <input type="text" id="host-name" placeholder="Dein Name" maxlength="20" autocomplete="off">
+        <button id="btn-create" class="btn-primary">Spiel erstellen</button>
+      </div>
+      <div class="card start-card">
+        <h2>Spiel beitreten</h2>
+        <p>Gib den Raumcode ein, um einem Spiel beizutreten.</p>
+        <input type="text" id="join-code" placeholder="Raumcode (z.B. ABC123)" maxlength="6" autocomplete="off">
+        <input type="text" id="join-name" placeholder="Dein Name" maxlength="20" autocomplete="off">
+        <button id="btn-join" class="btn-primary">Beitreten</button>
+      </div>
+    </div>
+
+    <!-- View: Lobby -->
+    <div id="view-lobby" class="view">
+      <div class="card lobby-card">
+        <div class="room-code-display">
+          <span class="room-code-label">Raumcode</span>
+          <span id="room-code" class="room-code-value"></span>
+        </div>
+        <h2>Spieler</h2>
+        <ul id="player-list" class="player-list"></ul>
+        <button id="btn-start" class="btn-primary" style="display:none">Spiel starten</button>
+        <p id="lobby-wait" class="hint">Warte auf den Host...</p>
+      </div>
+    </div>
+
+    <!-- View: Game -->
+    <div id="view-game" class="view">
+      <div class="game-header">
+        <div class="called-word-display">
+          <span class="called-word-label">Aktuelles Wort</span>
+          <span id="current-word" class="called-word-value">—</span>
+        </div>
+        <button id="btn-call" class="btn-primary" style="display:none">Nächstes Wort</button>
+      </div>
+
+      <div id="bingo-card" class="bingo-card"></div>
+
+      <div class="called-words-section">
+        <h3>Aufgerufene Wörter</h3>
+        <div id="called-words-list" class="called-words-list"></div>
+      </div>
+
+      <button id="btn-reset" class="btn-secondary" style="display:none">Neues Spiel</button>
+    </div>
+
+    <!-- Bingo Overlay -->
+    <div id="bingo-overlay" class="bingo-overlay">
+      <div class="bingo-overlay-content">
+        <h1>BINGO!</h1>
+        <p id="bingo-winner"></p>
+        <button id="btn-close-overlay" class="btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

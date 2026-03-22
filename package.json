@@ -1,0 +1,16 @@
+{
+  "name": "cas-bingo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/client/app.ts --bundle --outfile=src/public/app.js --format=esm --target=es2020 --minify",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^3.99.0"
+  }
+}
